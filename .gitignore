@@ -1,0 +1,47 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos temporales
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.bak
+*.tmp
+
+# Entorno virtual
+venv/
+.env/
+.env.bak
+.venv/
+env/
+
+# Dependencias locales
+pip-wheel-metadata/
+*.egg-info/
+*.egg
+dist/
+build/
+
+# ---- Bases de datos locales ----
+*.db
+*.sqlite3
+
+# ---- Flet ----
+.flet/
+
+# ---- IDEs y editores ----
+.vscode/
+.idea/
+*.iml
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Otros ----
+*.cache
