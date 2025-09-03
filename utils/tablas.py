@@ -14,7 +14,7 @@ class DataTableManager(Column):
         self.margin = Margin(left=10, top=10, right=10, bottom=20)
         self._tables = {}
 
-    def create_data_table(self, head_table:str, table_items:list, data=[], clases:dict = {}):
+    def create_data_table(self, head_table:str, table_items:list, data=[], services:dict = {}):
         """
         Genera una tabla con los datos proporcionados.
         
@@ -29,16 +29,11 @@ class DataTableManager(Column):
         self.head_table = head_table
         # Mapeo de clases según el tipo de tabla debe estar definida de esta manera y pasada por parametro
 
-        # clases = {
-            # "Pacientes": Paciente_agente_servicio,
-            # "Pruebas": Paciente_agente_servicio,
-            # "ingredientes": Ingredientes,
-            # "receta": Receta,
-            # "cantidad_ingredientes": Cant_ing_x_receta
-
-        # }
-        clase = clases.get(head_table, None)
-
+        servicios = {
+            key: val for key, val in services.items() 
+        }
+        self.servicio = servicios.get(head_table, None)
+        print(self.servicio,"self.servicio en crear tabla ------------")
         table = DataTable(
             expand=True,
             border=border.all(0, "#D1D5DB"),
@@ -71,8 +66,8 @@ class DataTableManager(Column):
                     ) for i, cell in enumerate(row)
                 ] + [
                     DataCell(Row(controls=[
-                        IconButton(icon="create", icon_color="blue",data={"row":row,"row_id":row[0],"nombre":row[2]}, on_click=lambda e, r=row: self.edit_row(e, clase)),
-                        IconButton(icon=Icons.DELETE, icon_color="red", data={"row":row,"row_id":row[0],"nombre":row[2]if self.head_table =="Pacientes" else row[1]}, on_click=lambda e:self.permiso_eliminar(e, clase)),
+                        IconButton(icon="create", icon_color="blue",data={"row":row,"row_id":row[0],"nombre":row[2]}, on_click=lambda e, r=row: self.edit_row(e, self.servicio)),
+                        IconButton(icon=Icons.DELETE, icon_color="red", data={"row":row,"row_id":row[0],"nombre":row[2]if self.head_table =="Pacientes" else row[1]}, on_click=lambda e:self.permiso_eliminar(e)),
                     ], spacing=12))
                 ]
             ) for row in data
@@ -81,11 +76,8 @@ class DataTableManager(Column):
         return table
 
     
-    def refresh_data(self, head_table: str, new_data: List[Tuple], clase):
-        if head_table in self._tables:
-            table, table_items = self._tables[head_table]
-
-        table.rows = [
+    def refresh_data(self, new_data: List[Tuple]):
+        return [
             DataRow(
                 cells=[
                     DataCell(
@@ -94,13 +86,13 @@ class DataTableManager(Column):
                     ) for i, cell in enumerate(row)
                 ] + [
                     DataCell(Row(controls=[
-                        IconButton(icon="create", icon_color="blue",data={"row":row,"row_id":row[0],"nombre":row[2]}, on_click=lambda e, r=row: self.edit_row(e, clase)),
-                        IconButton(icon=Icons.DELETE, icon_color="red", data={"row":row,"row_id":row[0],"nombre":row[2]if self.head_table =="Pacientes" else row[1]}, on_click=lambda e:self.permiso_eliminar(e, clase)),
+                        IconButton(icon="create", icon_color="blue",data={"row":row,"row_id":row[0],"nombre":row[2]}, on_click=lambda e, r=row: self.edit_row(e, self.servicio)),
+                        IconButton(icon=Icons.DELETE, icon_color="red", data={"row":row,"row_id":row[0],"nombre":row[2]if self.head_table =="Pacientes" else row[1]}, on_click=lambda e:self.permiso_eliminar(e)),
                     ], spacing=12))
                 ]
             ) for row in new_data
         ]
-    def edit_row(self,e, clase):
+    def edit_row(self,e):
         """Método para editar una fila"""
         # Aquí podrías abrir un modal o actualizar datos en la base
         data = e.control.data
@@ -113,7 +105,7 @@ class DataTableManager(Column):
 
         async def on_guardar_resultado(ev):
             async def wrapper(ev):
-                await self.actualizar_paciente(ev, row_id, resultado.value, clase)
+                await self.actualizar_paciente(ev, row_id, resultado.value, self.servicio)
             await wrapper(ev)
             self.main.update()
         datos = Column(
@@ -152,36 +144,34 @@ class DataTableManager(Column):
         dlg_callback(self,e=e,page=self.page,content=datos,title="Formulario para cambio del resultado del paciente", icon=Icons.NOTE_ADD,color_icon="blue", action_def=on_guardar_resultado,win_height=250)
         
         
-    async def actualizar_paciente(self,e,id,resultado,clase):
-        instancia = clase()
-        result = await instancia.actualizar_paciente_resultado(id,resultado)
-        if result:
-            dlg_callback(self,e=e,page=self.page,content=Text("El usuario ha sido actualizado exitosamente"),title=f"Usuario actualizado correctamente",icon=Icons.CHECK,color_icon="green",win_height=200,icon_btn=Icons.CHECK)
-        else:
-            dlg_callback(self,e=e,page=self.page,content=Text("ha ocurrido un error"),title=f"ha ocurrido un error",icon=Icons.CHECK,color_icon="red",win_height=200,icon_btn=Icons.WARNING)
-        await self.listar(e)
-    def permiso_eliminar(self,e,clase):
+    async def actualizar_paciente(self,e,id,resultado):
+        instancia = self.servicio
+        # result = await instancia.actualizar_paciente_resultado(id,resultado)
+        # if result:
+        #     dlg_callback(self,e=e,page=self.page,content=Text("El usuario ha sido actualizado exitosamente"),title=f"Usuario actualizado correctamente",icon=Icons.CHECK,color_icon="green",win_height=200,icon_btn=Icons.CHECK)
+        # else:
+        #     dlg_callback(self,e=e,page=self.page,content=Text("ha ocurrido un error"),title=f"ha ocurrido un error",icon=Icons.CHECK,color_icon="red",win_height=200,icon_btn=Icons.WARNING)
+        # await self.listar(e)
+
+
+    def permiso_eliminar(self,e):
         data = e.control.data
         row_id = data.get("row_id")
         nombre = data.get("nombre")
-        dlg_callback(self,e=e,page=self.page,content=Text("Presiona aceptar para eliminar si estas seguro"),title=f"Estas seguro de querer Eliminar a {nombre}",icon=Icons.WARNING,color_icon="red",action_def=self.delete_row(row_id,clase,nombre),win_height=200,icon_btn=Icons.DELETE)
+        dlg_callback(self,e=e,page=self.page,content=Text("Presiona aceptar para eliminar si estas seguro",color=Colors.AMBER),title=f"Estas seguro de querer Eliminar a {nombre}",icon=Icons.WARNING,color_icon="red",action_def=lambda e:self.delete_row(e,row_id,nombre),win_height=200,icon_btn=Icons.DELETE)
         
-    def delete_row(self, row_id, clase,nombre):
+    def delete_row(self,e, row_id,nombre):
         """Método para eliminar una fila"""
-        # Aquí podrías ejecutar la lógica de eliminación de la base de d
-        async def on_delete_click(e):
-
-            instancia = clase()
-            if self.head_table == "Pacientes":
-                resultado = await instancia.delete(id=row_id)
-                await self.listar(e)
-
-            elif self.head_table == "Pruebas":
-                resultado = await instancia.delete(id=row_id)
-                await self.listar(e)
+        try:
+            resultado = self.servicio.delete(id=row_id)
+            # self.listar(e)
             if 'success' in resultado:
-                dlg_callback(self,e=e,page=self.page,content=Text("El usuario ha sido eliminado exitosamente"),title=f"eliminaste a {nombre}",icon=Icons.CHECK,color_icon="green",win_height=200,icon_btn=Icons.CHECK)
-            self.main.update()
-            
-        return on_delete_click
+                new_data = self.listar()
+                tabla = self._tables.get(self.head_table)
+                if tabla:
+                    tabla[0].rows = self.refresh_data(new_data)
+                # self.refresh_data(self.head_table,new_data, self.servicio)
+                return dlg_callback(self,e=e,page=self.page,content=Text("El usuario ha sido eliminado exitosamente",color=Colors.GREEN),title=f"eliminaste a {nombre}",icon=Icons.CHECK,color_icon=Colors.GREEN,win_height=140,icon_btn=Icons.CHECK)
+        except Exception as ex:
+            return dlg_callback(self,e=e,page=self.page,content=Text(f"El error es: {ex}",color=Colors.RED),title=f"Error de ejecucion",icon=Icons.CHECK,color_icon="red",win_height=140,icon_btn=Icons.WARNING)
 

@@ -20,8 +20,17 @@ class MediadorPrincipal:
         self.event_bus = event_bus
         self.event_bus.suscribir("navegacion", self.manejar_accion)
         self.form_usuario = FormularioBase(page, campos_config=usuario)
-        self._datatables = DataTableManager(main=self.main, dlg=self.show_dlg, page=self.page)
+        self._datatables = DataTableManager(main=self.main, dlg=self.show_dlg, page=self.page,listar=self.listar_usuarios)
+        self.servicios = {
+            "usuario": self._services_usuario,
 
+        } 
+        self.tabla_usuarios = self._datatables.create_data_table(
+                head_table="usuario",
+                table_items=["id","nombre","contraseña","fecha_creacion","fecha_modificacion"],
+                data=self.listar_usuarios(),
+                services = self.servicios
+                )
 
     def manejar_accion(self, accion):
         self.main.controls.clear()
@@ -39,16 +48,19 @@ class MediadorPrincipal:
             # Guardar en BD
         if options == "usuario":
             try:
-                self._services_usuario.create_user(**self.form_usuario.obtener_datos())
+                self._services_usuario.create(**self.form_usuario.obtener_datos())
                 dlg_callback(
                     self,
                     e,
                     self.page,
                     "La operación fue exitosa",
-                    ft.Text(f"Ha sido agregado satisfactoriamente"),
+                    ft.Text(f"Ha sido agregado satisfactoriamente",color=ft.Colors.GREEN),
                     win_height=150,
                     icon=ft.Icons.CHECK_CIRCLE,
                     type_func=True
+                    )
+                self.tabla_usuarios.rows = self._datatables.refresh_data(
+                    new_data=self.listar_usuarios(),
                     )
             except Exception as ex:
                 dlg_callback(
@@ -56,7 +68,7 @@ class MediadorPrincipal:
                     e,
                     self.page,
                     "Ha ocurrido un error ",
-                    ft.Text(f"El Error es: {ex}"),
+                    ft.Text(f"El Error es: {ex}",color=ft.Colors.RED),
                     win_height=150,
                     icon=ft.Icons.ERROR,
                     )
@@ -64,10 +76,10 @@ class MediadorPrincipal:
                 self._services_usuario.repository.close()
                 self.form_usuario.clean()
 
-        self.page.update()
+        
 
     def listar_usuarios(self):
-        return [(u.id, u.nombre, u.contraseña, u.fecha_creacion, u.fecha_modificacion) for u in self._services_usuario.get_all_users()]
+        return [(u.id, u.nombre, u.contraseña, u.fecha_creacion, u.fecha_modificacion) for u in self._services_usuario.get_all()]
 
     def mostrar_registros(self):
         self.main.controls.extend([
@@ -82,17 +94,13 @@ class MediadorPrincipal:
                         self.form_usuario.build(),
                         win_height=250,
                         icon=ft.Icons.SUPERVISED_USER_CIRCLE,
+                        color_icon=ft.Colors.CYAN,
                         action_def=lambda e: self.on_save(e,options="usuario")
                         ),
                 
         )]),
             ft.Container(width=20, height=30),
-            self._datatables.create_data_table(
-                head_table="usuario",
-                table_items=["id","nombre","contraseña","fecha_creacion","fecha_modificacion"],
-                data=self.listar_usuarios()
-                
-                ),
+            self.tabla_usuarios,
             ft.Container(width=20, height=30),
 
                 ])
